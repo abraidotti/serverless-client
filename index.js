@@ -1,25 +1,51 @@
 const request = require('request')
-const morgan = require('morgan')
+const { createLogger, format, transports } = require('winston')
 const schedule = require('node-schedule')
 
 const machineId = '1'
 
-console.log('Client is running.')
+const logger = createLogger({
+  level: 'info',
+  format: format.combine(
+    format.errors({ stack: true }),
+    format.splat(),
+    format.json()
+  ),
+  defaultMeta: { service: 'serverless-client-ping' },
+  transports: [
+    //
+    // - Write to all logs with level `info` and below to `combined.log`
+    // - Write all logs error (and below) to `error.log`.
+    //
+    new transports.File({ filename: 'logs/error.log', level: 'error' }),
+    new transports.File({ filename: `logs/ping-client-${machineId}.log` })
+  ]
+})
 
-schedule.scheduleJob('*/5 * * * *', () => {
-    const date = new Date()
+logger.log({
+  level: 'info',
+  message: 'Ping client activated.',
+  machineId
+})
 
-    request.post('https://oagfppjnva.execute-api.us-east-1.amazonaws.com/dev/ping', {
-        json: {
-            machineId,
-            time: date
-        }
-    }, (error, res, body) => {
-        if (error) {
-            console.error(error)
-            return
-        }
-        console.log(`statusCode: ${res.statusCode}`)
-        console.log(body)
+schedule.scheduleJob('*/1 * * * *', () => {
+  const date = new Date()
+
+  request.post('https://oagfppjnva.execute-api.us-east-1.amazonaws.com/dev/ping', {
+    json: {
+      machineId,
+      time: date.toISOString()
+    }
+  }, (error, res, body) => {
+    if (error) {
+      logger.error('error', new Error(error))
+      return
+    }
+    logger.log({
+      level: 'info',
+      message: 'Successful ping.',
+      statusCode: res.statusCode,
+      body: body
     })
+  })
 })

@@ -13,10 +13,6 @@ const logger = createLogger({
   ),
   defaultMeta: { service: 'serverless-client-ping' },
   transports: [
-    //
-    // - Write to all logs with level `info` and below to `combined.log`
-    // - Write all logs error (and below) to `error.log`.
-    //
     new transports.File({ filename: 'logs/error.log', level: 'error' }),
     new transports.File({ filename: `logs/ping-client-${machineId}.log` })
   ]
@@ -28,7 +24,7 @@ logger.log({
   machineId
 })
 
-schedule.scheduleJob('*/1 * * * *', () => {
+schedule.scheduleJob('*/5 * * * *', () => {
   const date = new Date()
 
   request.post('https://oagfppjnva.execute-api.us-east-1.amazonaws.com/dev/ping', {
